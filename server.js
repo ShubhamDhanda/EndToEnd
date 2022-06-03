@@ -7,13 +7,13 @@ const formatMessage = require("./utils/messages");
 const { encrypt, decrypt } = require("./utils/cryptography.js");
 const Cryptr = require("cryptr");
 const Room = require("./RoomSchema");
-const bcrypt = require("bcrypt");
+// const bcrypt = require("bcrypt");
 var bodyParser = require("body-parser");
 const cryptr = new Cryptr(
   "56dce7276d2b0a24e032beedf0473d743dbacf92aafe898e5a0f8d9898c9eae80a73798beed53489e8dbfd94191c1f28dc58cad12321d8150b93a2e092a744265fd214d7c2ef079e2f01b6d06319b7b2"
 );
 
-mongoose.connect("mongodb://localhost/chat_db");
+mongoose.connect("mongodb://localhost:27017/end?readPreference=primary&appname=MongoDB%20Compass&ssl=false");
 
 const {
   userJoin,
@@ -122,22 +122,21 @@ app.post("/validate", (req, res) => {
   key = req.body.key;
   Room.findOne({ name: roomName }, async (err, room) => {
     if (room === null) {
-      res.redirect("wrong-password.html"); // User not Found
+      room = await Room.create({
+        "name" : roomName,
+        "secretKey" : key
+      });
+      res.redirect("chat.html?room=" + roomName + "&username=" + username + "&sk=" + room._id)
     }
-
-    try {
-      if (await bcrypt.compare(key, room.secretKey)) {
+    else{
         rn = room.name;
         usern = username;
         url = "chat.html?room=" + rn + "&username=" + usern + "&sk=" + room._id;
         console.log(url);
         res.redirect(url); // User not Found
-      } else res.redirect("wrong-password.html"); // Incorrect Password
-    } catch {
-      res.redirect("wrong-password.html"); // unknown error
-    }
-  });
-});
+      }
+  })
+})
 
 const PORT = process.env.PORT || 3000;
 
